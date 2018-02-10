@@ -18,6 +18,16 @@ import java.util.Map;
 
 public class ServerSelectionMenu extends ItemMenu {
 
+    private static ServerSelectionMenu instance = null;
+
+    public static ServerSelectionMenu getInstance() {
+        if (instance == null) {
+            instance = new ServerSelectionMenu(Hubble.getInstance().getHubbleConfig());
+        }
+
+        return instance;
+    }
+
     public static class ServerMenuItem extends MenuItem {
 
         private String serverName;
@@ -30,6 +40,7 @@ public class ServerSelectionMenu extends ItemMenu {
 
         @Override
         public void onClick(Player player, ClickType clickType) {
+            Hubble.API.getUser(player).setTeleporting(true);
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
             out.writeUTF("Connect");
             out.writeUTF(serverName);
@@ -40,6 +51,7 @@ public class ServerSelectionMenu extends ItemMenu {
 
     public ServerSelectionMenu(HubbleConfig config) {
         super("Server Selector", 1);
+        setExitOnClickOutside(false);
 
         /*
         If we're not able to close this menu, let's add that behaviour.
@@ -51,7 +63,11 @@ public class ServerSelectionMenu extends ItemMenu {
                     Hubble.getInstance().getThreadManager().runTaskOneTickLater(new Runnable() {
                         @Override
                         public void run() {
-                            Hubble.API.openServerSelector(player);
+                            try {
+                                Hubble.API.openServerSelector(player);
+                            } catch (NullPointerException ex) {
+
+                            }
                         }
                     });
                 }

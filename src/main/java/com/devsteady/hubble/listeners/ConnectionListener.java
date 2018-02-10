@@ -23,7 +23,7 @@ public class ConnectionListener implements Listener {
                 public void run() {
                     Hubble.API.openServerSelector(e.getPlayer());
                 }
-            }, TimeHandler.getTimeInTicks(2,SECOND));
+            }, TimeHandler.getTimeInTicks(1,SECOND));
         }
     }
 }

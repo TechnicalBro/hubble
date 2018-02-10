@@ -3,11 +3,14 @@ package com.devsteady.hubble;
 import com.devsteady.hubble.config.HubbleConfig;
 import com.devsteady.hubble.listeners.ConnectionListener;
 import com.devsteady.hubble.menu.ServerSelectionMenu;
+import com.devsteady.hubble.users.HubUser;
+import com.devsteady.hubble.users.HubUserManager;
 import com.devsteady.onyx.chat.Chat;
 import com.devsteady.onyx.plugin.BukkitPlugin;
 import com.devsteady.onyx.yml.InvalidConfigurationException;
 import lombok.Getter;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
 import java.io.File;
@@ -26,11 +29,17 @@ public class Hubble extends BukkitPlugin implements PluginMessageListener {
     @Getter
     private HubbleConfig hubbleConfig = new HubbleConfig();
 
+    @Getter
+    private HubUserManager hubUsers;
+
     @Override
     public void startup() {
 
+        hubUsers = new HubUserManager(this);
+
         registerListeners(
-                new ConnectionListener(this)
+                new ConnectionListener(this),
+                hubUsers
         );
 
         getServer().getMessenger().registerOutgoingPluginChannel(this,"BungeeCord");
@@ -41,6 +50,8 @@ public class Hubble extends BukkitPlugin implements PluginMessageListener {
 
     @Override
     public void shutdown() {
+        Messenger pluginMessenger = getServer().getMessenger();
+        pluginMessenger.unregisterOutgoingPluginChannel(this);
 
     }
 
@@ -78,8 +89,23 @@ public class Hubble extends BukkitPlugin implements PluginMessageListener {
     }
 
     public static class API {
+        public static HubUser getUser(Player player) {
+            return getInstance().getHubUsers().getUser(player);
+        }
+
+        public static HubUserManager getUserManager() {
+            return getInstance().getHubUsers();
+        }
+
+        /**
+         * Will open the server selector for the player if they're not teleporting.
+         * @param player player to open the server selector for.
+         */
         public static void openServerSelector(Player player) {
-            new ServerSelectionMenu(getInstance().getHubbleConfig()).openMenu(player);
+            if (getUser(player).isTeleporting()) {
+                return;
+            }
+            ServerSelectionMenu.getInstance().openMenu(player);
         }
     }
 }
