@@ -1,0 +1,6 @@
+name: Hubble
+main: com.devsteady.hubble.Hubble
+version: ${project.version}
+description: Quirky Simple Efficient Hub Plugin
+author: Brandon Curtis (TheGamersCave)
+depend: [Onyx]
