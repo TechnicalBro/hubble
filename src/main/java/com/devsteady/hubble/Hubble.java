@@ -1,12 +1,14 @@
 package com.devsteady.hubble;
 
 import com.devsteady.hubble.config.HubbleConfig;
-import com.devsteady.hubble.listeners.ConnectionListener;
+import com.devsteady.hubble.gadget.ServerMenuGadget;
+import com.devsteady.hubble.listeners.HubListener;
 import com.devsteady.hubble.menu.ServerSelectionMenu;
 import com.devsteady.hubble.users.HubUser;
 import com.devsteady.hubble.users.HubUserManager;
 import com.devsteady.onyx.chat.Chat;
-import com.devsteady.onyx.plugin.BukkitPlugin;
+import com.devsteady.onyx.game.CraftGame;
+import com.devsteady.onyx.player.Players;
 import com.devsteady.onyx.yml.InvalidConfigurationException;
 import lombok.Getter;
 import org.bukkit.entity.Player;
@@ -18,7 +20,7 @@ import java.io.File;
 /**
  * Hub plugin for HcPrisons!
  */
-public class Hubble extends BukkitPlugin implements PluginMessageListener {
+public class Hubble extends CraftGame<HubUserManager> implements PluginMessageListener {
 
     private static Hubble instance = null;
 
@@ -29,7 +31,6 @@ public class Hubble extends BukkitPlugin implements PluginMessageListener {
     @Getter
     private HubbleConfig hubbleConfig = new HubbleConfig();
 
-    @Getter
     private HubUserManager hubUsers;
 
     @Override
@@ -38,8 +39,12 @@ public class Hubble extends BukkitPlugin implements PluginMessageListener {
         hubUsers = new HubUserManager(this);
 
         registerListeners(
-                new ConnectionListener(this),
+                new HubListener(this),
                 hubUsers
+        );
+
+        registerGadgets(
+                ServerMenuGadget.getInstance()
         );
 
         getServer().getMessenger().registerOutgoingPluginChannel(this,"BungeeCord");
@@ -84,17 +89,44 @@ public class Hubble extends BukkitPlugin implements PluginMessageListener {
     }
 
     @Override
+    public long tickDelay() {
+        return 30;
+    }
+
+    @Override
+    public void update() {
+        if (Players.getOnlineCount() > 0 && !getHubbleConfig().isCloseable()) {
+            for (Player player : Players.allPlayers()) {
+                if (!Players.hasItemInHand(player,ServerMenuGadget.getInstance().getItem())) {
+                    continue;
+                }
+
+                try {
+                    API.openServerSelector(player);
+                } catch (Exception ex) {
+
+                }
+            }
+        }
+    }
+
+    @Override
+    public HubUserManager getUserManager() {
+        return hubUsers;
+    }
+
+    @Override
     public void onPluginMessageReceived(String s, Player player, byte[] bytes) {
 
     }
 
     public static class API {
         public static HubUser getUser(Player player) {
-            return getInstance().getHubUsers().getUser(player);
+            return getInstance().getUserManager().getUser(player);
         }
 
         public static HubUserManager getUserManager() {
-            return getInstance().getHubUsers();
+            return getInstance().getUserManager();
         }
 
         /**
@@ -102,9 +134,6 @@ public class Hubble extends BukkitPlugin implements PluginMessageListener {
          * @param player player to open the server selector for.
          */
         public static void openServerSelector(Player player) {
-            if (getUser(player).isTeleporting()) {
-                return;
-            }
             ServerSelectionMenu.getInstance().openMenu(player);
         }
     }

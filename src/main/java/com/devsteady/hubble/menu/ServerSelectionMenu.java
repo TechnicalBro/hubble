@@ -3,9 +3,12 @@ package com.devsteady.hubble.menu;
 import com.devsteady.hubble.Hubble;
 import com.devsteady.hubble.config.HubbleConfig;
 import com.devsteady.hubble.config.ServerItemData;
+import com.devsteady.hubble.users.HubUser;
 import com.devsteady.onyx.inventory.menu.*;
 import com.devsteady.onyx.item.ItemBuilder;
 import com.devsteady.onyx.item.Items;
+import com.devsteady.onyx.time.TimeHandler;
+import com.devsteady.onyx.time.TimeType;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 import org.bukkit.Bukkit;
@@ -41,11 +44,16 @@ public class ServerSelectionMenu extends ItemMenu {
         @Override
         public void onClick(Player player, ClickType clickType) {
             Hubble.API.getUser(player).setTeleporting(true);
+
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
             out.writeUTF("Connect");
             out.writeUTF(serverName);
 //            Bukkit.dispatchCommand(player, "server " + serverName);
-            player.sendPluginMessage(Hubble.getInstance(),"BungeeCord",out.toByteArray());
+
+            Hubble.getInstance().getThreadManager().runTaskLater(() -> {
+                player.sendPluginMessage(Hubble.getInstance(),"BungeeCord",out.toByteArray());
+            }, 2);
+            Hubble.API.getUser(player).setTeleporting(false);
         }
     }
 
@@ -64,6 +72,9 @@ public class ServerSelectionMenu extends ItemMenu {
                         @Override
                         public void run() {
                             try {
+                                if (Hubble.API.getUser(player).isTeleporting()) {
+                                    return;
+                                }
                                 Hubble.API.openServerSelector(player);
                             } catch (NullPointerException ex) {
 
@@ -74,8 +85,7 @@ public class ServerSelectionMenu extends ItemMenu {
             });
         }
 
-        addMenuItem(new ServerMenuItem("5-man", ItemBuilder.of(Material.IRON_SWORD).name("&l&7Harcore Prison &eP &cV &eP").lore("&7Completely Custom").item()),0);
-
+        addMenuItem(new ServerMenuItem("5-man", ItemBuilder.of(Material.IRON_SWORD).name("&l&7Hardcore Prison &eP &cV &eP").lore("&7Completely Custom").item()),0);
 //        Map<Integer, ServerItemData> slotData = config.getServerItems();
 //
 //        for(Map.Entry<Integer, ServerItemData> slot : slotData.entrySet()) {
